@@ -8,7 +8,7 @@ const { Pool } = pkg;
 dotenv.config();
 
 // Initialisation du bot et de la base de données
-const bot = new Bot(process.env.TELEGRAM_TOKEN);
+const bot = new Bot(process.env.BOT_TOKEN);
 const db = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Mémoire temporaire pour le suivi des étapes utilisateur
