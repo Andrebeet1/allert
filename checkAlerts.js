@@ -1,84 +1,42 @@
-// checkAlerts.js
-import dotenv from "dotenv";
-import pkg from "pg";
-import fetch from "node-fetch";
 import { Bot } from "grammy";
+import pg from "pg";
+import dotenv from "dotenv";
 
-// Chargement des variables d'environnement
 dotenv.config();
 
-if (!process.env.TELEGRAM_TOKEN) {
-  throw new Error("❌ TELEGRAM_TOKEN manquant dans le fichier .env ou Render Environment Variables !");
+// 🔐 Chargement du token depuis la variable BOT_TOKEN
+const token = process.env.BOT_TOKEN;
+
+if (!token || token.trim() === "") {
+  throw new Error("❌ BOT_TOKEN manquant ! Assure-toi de l'avoir défini dans Render (ou fichier .env en local).");
 }
 
-const bot = new Bot(process.env.TELEGRAM_TOKEN);
-const { Pool } = pkg;
+const bot = new Bot(token);
 
-const db = new Pool({
+// 📦 Connexion à la base de données PostgreSQL
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // indispensable sur Render
+    rejectUnauthorized: false, // Requis sur Render
   },
 });
 
-// Fonction pour récupérer le prix d'une crypto depuis CoinGecko
-async function getPrice(symbol) {
-  try {
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`
-    );
-    const data = await response.json();
-    return data[symbol]?.usd ?? null;
-  } catch (error) {
-    console.error(`❌ Erreur API pour ${symbol}:`, error.message);
-    return null;
-  }
-}
-
-// Vérification des alertes
 async function checkAlerts() {
-  const res = await db.query(`
-    SELECT alerts.id, alerts.symbol, alerts.condition, alerts.value, users.telegram_id
-    FROM alerts
-    JOIN users ON alerts.user_id = users.id
-  `);
+  try {
+    const { rows } = await pool.query("SELECT message, chat_id FROM alerts WHERE sent = false");
 
-  for (const alert of res.rows) {
-    const symbol = alert.symbol.toLowerCase();
-    const price = await getPrice(symbol);
-
-    if (price === null) {
-      console.log(`❌ Impossible d’obtenir le prix de ${symbol}`);
-      continue;
+    for (const alert of rows) {
+      await bot.api.sendMessage(alert.chat_id, alert.message);
+      await pool.query("UPDATE alerts SET sent = true WHERE chat_id = $1", [alert.chat_id]);
     }
 
-    const conditionMet =
-      (alert.condition === ">" && price > alert.value) ||
-      (alert.condition === "<" && price < alert.value);
-
-    if (conditionMet) {
-      try {
-        await bot.api.sendMessage(
-          alert.telegram_id,
-          `🚨 Alerte déclenchée ! ${alert.symbol.toUpperCase()} ${alert.condition} ${alert.value} ➡ Prix actuel : ${price} USD`
-        );
-
-        await db.query("DELETE FROM alerts WHERE id = $1", [alert.id]);
-        console.log(`✅ Alerte ${alert.id} envoyée et supprimée`);
-      } catch (err) {
-        console.error(`❌ Erreur d'envoi à ${alert.telegram_id} :`, err.message);
-      }
-    }
-  }
-}
-
-// Exécution
-checkAlerts()
-  .then(() => {
-    console.log("✔ Vérification des alertes terminée.");
-    process.exit(0);
-  })
-  .catch((err) => {
+    console.log("✅ Vérification des alertes terminée.");
+  } catch (err) {
     console.error("❌ Erreur lors de la vérification :", err);
     process.exit(1);
-  });
+  } finally {
+    await pool.end();
+  }
+}
+
+checkAlerts();
