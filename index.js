@@ -1,31 +1,29 @@
-import express from 'express';
-import { Bot } from 'grammy';
-import dotenv from 'dotenv';
+// index.js
+import express from "express";
+import { bot } from "./bot.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const bot = new Bot(process.env.BOT_TOKEN);
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
-// Fonction pour démarrer le bot et le serveur
+// Démarrage du serveur et initialisation du bot
 async function start() {
-  // 🔧 Initialiser le bot
-  await bot.init();
+  await bot.init(); // ✅ Initialiser le bot
 
-  // 🎯 Route pour recevoir les mises à jour via webhook
-  app.post(`/webhook/${process.env.BOT_TOKEN}`, (req, res) => {
-    bot.handleUpdate(req.body)
-      .then(() => res.sendStatus(200))
-      .catch(err => {
-        console.error('Erreur lors du traitement du webhook :', err);
-        res.sendStatus(500);
-      });
+  app.post(`/webhook/${process.env.BOT_TOKEN}`, async (req, res) => {
+    try {
+      await bot.handleUpdate(req.body); // ✅ Fonctionne seulement après .init()
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("Erreur handleUpdate :", err);
+      res.sendStatus(500);
+    }
   });
 
-  // 🌐 Lancer le serveur Express
   app.listen(PORT, () => {
     console.log(`✅ Serveur démarré sur le port ${PORT}`);
     console.log(`🔗 Webhook configuré : https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook/${process.env.BOT_TOKEN}`);
