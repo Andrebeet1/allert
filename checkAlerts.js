@@ -7,7 +7,7 @@ import { Bot } from "grammy";
 // Chargement des variables d'environnement
 dotenv.config();
 
-const bot = new Bot(process.env.TELEGRAM_TOKEN);
+const bot = new Bot(process.env.BOT_TOKEN);
 const { Pool } = pkg;
 const db = new Pool({ connectionString: process.env.DATABASE_URL });
 
