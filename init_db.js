@@ -28,6 +28,9 @@ const initDb = async () => {
         symbol TEXT NOT NULL,
         condition TEXT NOT NULL CHECK (condition IN ('>', '<')),
         value NUMERIC NOT NULL,
+        message TEXT, -- Ajouté pour checkAlerts.js
+        chat_id BIGINT, -- Ajouté pour checkAlerts.js
+        sent BOOLEAN DEFAULT FALSE, -- Ajouté pour checkAlerts.js
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -41,4 +44,3 @@ const initDb = async () => {
 };
 
 initDb();
-
