@@ -4,35 +4,44 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// 🔐 Chargement du token depuis la variable BOT_TOKEN
+// Vérifie la présence du token
 const token = process.env.BOT_TOKEN;
-
 if (!token || token.trim() === "") {
-  throw new Error("❌ BOT_TOKEN manquant ! Assure-toi de l'avoir défini dans Render (ou fichier .env en local).");
+  throw new Error("❌ BOT_TOKEN manquant ! Ajoute-le dans Render ou dans le fichier .env.");
 }
 
 const bot = new Bot(token);
 
-// 📦 Connexion à la base de données PostgreSQL
+// Connexion PostgreSQL
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false, // Requis sur Render
-  },
+  ssl: { rejectUnauthorized: false }, // Obligatoire sur Render
 });
 
 async function checkAlerts() {
   try {
-    const { rows } = await pool.query("SELECT message, chat_id FROM alerts WHERE sent = false");
+    const { rows } = await pool.query(
+      "SELECT id, message, chat_id FROM alerts WHERE sent = false"
+    );
 
     for (const alert of rows) {
-      await bot.api.sendMessage(alert.chat_id, alert.message);
-      await pool.query("UPDATE alerts SET sent = true WHERE chat_id = $1", [alert.chat_id]);
+      try {
+        await bot.api.sendMessage(alert.chat_id, alert.message);
+
+        await pool.query(
+          "UPDATE alerts SET sent = true WHERE id = $1",
+          [alert.id]
+        );
+
+        console.log(`✅ Message envoyé à chat_id=${alert.chat_id}`);
+      } catch (err) {
+        console.error(`❌ Erreur lors de l'envoi à ${alert.chat_id} :`, err.message);
+      }
     }
 
     console.log("✅ Vérification des alertes terminée.");
   } catch (err) {
-    console.error("❌ Erreur lors de la vérification :", err);
+    console.error("❌ Erreur générale lors de la vérification :", err.message);
     process.exit(1);
   } finally {
     await pool.end();
