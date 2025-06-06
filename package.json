@@ -1,0 +1,20 @@
+{
+  "name": "trade-alert-bot",
+  "version": "1.0.0",
+  "description": "Bot Telegram pour créer des alertes de prix crypto",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "init-db": "node init-db.js",
+    "check-alerts": "node checkAlerts.js"
+  },
+  "keywords": ["telegram", "bot", "crypto", "alert", "grammy", "postgres"],
+  "author": "TonNom",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "grammy": "^1.18.0",
+    "pg": "^8.11.3"
+  }
+}
