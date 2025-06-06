@@ -7,9 +7,19 @@ import { Bot } from "grammy";
 // Chargement des variables d'environnement
 dotenv.config();
 
-const bot = new Bot(process.env.BOT_TOKEN);
+if (!process.env.TELEGRAM_TOKEN) {
+  throw new Error("❌ TELEGRAM_TOKEN manquant dans le fichier .env ou Render Environment Variables !");
+}
+
+const bot = new Bot(process.env.TELEGRAM_TOKEN);
 const { Pool } = pkg;
-const db = new Pool({ connectionString: process.env.DATABASE_URL });
+
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // indispensable sur Render
+  },
+});
 
 // Fonction pour récupérer le prix d'une crypto depuis CoinGecko
 async function getPrice(symbol) {
@@ -72,4 +82,3 @@ checkAlerts()
     console.error("❌ Erreur lors de la vérification :", err);
     process.exit(1);
   });
-
