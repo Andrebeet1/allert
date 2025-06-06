@@ -7,11 +7,18 @@ const { Pool } = pkg;
 // Chargement des variables d'environnement
 dotenv.config();
 
-// Initialisation du bot et de la base de données
+// Initialisation du bot Telegram
 const bot = new Bot(process.env.BOT_TOKEN);
-const db = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Mémoire temporaire pour le suivi des étapes utilisateur
+// Connexion sécurisée à la base de données PostgreSQL (Render)
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+// Mémoire temporaire pour suivre l'état des utilisateurs
 const memory = new Map();
 
 // Supprime le dernier message du bot pour éviter l'encombrement
