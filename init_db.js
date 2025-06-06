@@ -13,6 +13,7 @@ const pool = new Pool({
 
 const initDb = async () => {
   try {
+    // Création de la table users si elle n'existe pas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -21,6 +22,7 @@ const initDb = async () => {
       );
     `);
 
+    // Création de la table alerts si elle n'existe pas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS alerts (
         id SERIAL PRIMARY KEY,
@@ -28,12 +30,14 @@ const initDb = async () => {
         symbol TEXT NOT NULL,
         condition TEXT NOT NULL CHECK (condition IN ('>', '<')),
         value NUMERIC NOT NULL,
-        message TEXT, -- Ajouté pour checkAlerts.js
-        chat_id BIGINT, -- Ajouté pour checkAlerts.js
-        sent BOOLEAN DEFAULT FALSE, -- Ajouté pour checkAlerts.js
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ajout des colonnes manquantes si elles n'existent pas
+    await pool.query(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS message TEXT;`);
+    await pool.query(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS chat_id BIGINT;`);
+    await pool.query(`ALTER TABLE alerts ADD COLUMN IF NOT EXISTS sent BOOLEAN DEFAULT FALSE;`);
 
     console.log("✅ Base de données initialisée avec succès !");
     await pool.end();
